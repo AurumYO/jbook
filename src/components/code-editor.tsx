@@ -64,11 +64,12 @@ return (
             value={initialValue}
             language="javascript" 
             theme="dark"
-            height="500px"
+            height="100%"
             options={{
                 wordWrap: 'on',
                 minimap: { enabled: false },
                 showUnused: false,
+                folding: false,
                 lineNumbersMinChars: 3,
                 fontSize: 18,
                 scrollBeyondLastLine: false,
