@@ -19,7 +19,7 @@ const Resizable: React.FC<ResizableProps> = ({ direction, children }) => {
 			if (timer) {
 				clearTimeout(timer);
 			}
- 
+
 			timer = setTimeout(() => {
 					setInnerHeight(window.innerHeight);
 					setInnerWidth(window.innerWidth);
