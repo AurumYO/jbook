@@ -12,43 +12,47 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCellsRouter = void 0;
+exports.cellRoutes = void 0;
 const express_1 = __importDefault(require("express"));
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
-const createCellsRouter = (filename, dir) => {
-    const router = express_1.default.Router();
-    router.use(express_1.default.json());
+const cellRoutes = (filename, dir) => {
+    const cellRouter = express_1.default.Router();
     const fullPath = path_1.default.join(dir, filename);
-    router.get('/cells', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    cellRouter.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const isLocalApiError = (err) => {
             return typeof err.code === 'string';
         };
         try {
             // Read the file
             const result = yield promises_1.default.readFile(fullPath, { encoding: 'utf-8' });
+            // parse a list of cells
+            // send list of cells back to browser
             res.send(JSON.parse(result));
         }
-        catch (err) {
-            if (isLocalApiError(err)) {
-                if (err.code === 'ENOENT') {
+        catch (error) {
+            // If read throws an error
+            // Inspect the error, see if it says that the file doesn't exist
+            if (isLocalApiError(error)) {
+                if (error.code === 'ENOENT') {
+                    // create the file and add default cells
                     yield promises_1.default.writeFile(fullPath, '[]', 'utf-8');
                     res.send([]);
                 }
-            }
-            else {
-                throw err;
+                else {
+                    throw error;
+                }
             }
         }
     }));
-    router.post('/cells', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-        // Take the list of cells from the request obj
+    cellRouter.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        // Take list of cells from the request obj
         // serialize them
         const { cells } = req.body;
-        // Write the cells into the file
+        // write the cells into the file
         yield promises_1.default.writeFile(fullPath, JSON.stringify(cells), 'utf-8');
         res.send({ status: 'ok' });
     }));
-    return router;
+    return cellRouter;
 };
-exports.createCellsRouter = createCellsRouter;
+exports.cellRoutes = cellRoutes;

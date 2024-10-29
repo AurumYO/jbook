@@ -3,62 +3,53 @@ import fs from 'fs/promises';
 import path from 'path';
 
 interface Cell {
-    id: string;
-    content: string;
-    type: 'text' | 'code';
+  id: string;
+  content: string;
+  type: 'text' | 'code';
 }
 
 interface LocalApiError {
-    code: string;
-    }
+  code: string;
+}
 
 export const createCellsRouter = (filename: string, dir: string) => {
-    const router = express.Router();
+  const router = express.Router();
+  router.use(express.json());
 
-    router.use(express.json());
+  const fullPath = path.join(dir, filename);
 
-    const fullPath = path.join(dir, filename);
+  router.get('/cells', async (req, res) => {
+    const isLocalApiError = (err: any): err is LocalApiError => {
+      return typeof err.code === 'string';
+    };
 
-    router.get('/cells', async (req, res) => {
-        const isLocalApiError = (err: any): err is LocalApiError => {
-            return typeof err.code === "string";
-        };
-        // Read file
-        try{
-            const result =  await fs.readFile(fullPath, { encoding: 'utf-8'});
+    try {
+      // Read the file
+      const result = await fs.readFile(fullPath, { encoding: 'utf-8' });
 
-            res.send(JSON.parse(result));
-
-        } catch (err) {
-            
-            if (isLocalApiError(err)) {
-                if (err.code === "ENOENT") {
-                    // Add code to creatre a file and add default cells
-                    await fs.writeFile(fullPath, "[]", "utf-8");
-                    res.send([]);
-                }
-            } else {
-                throw err;
-            }
-        
+      res.send(JSON.parse(result));
+    } catch (err) {
+      if (isLocalApiError(err)) {
+        if (err.code === 'ENOENT') {
+          await fs.writeFile(fullPath, '[]', 'utf-8');
+          res.send([]);
         }
-        // Read file
+      } else {
+        throw err;
+      }
+    }
+  });
 
-        // parse a list of cells out of it
+  router.post('/cells', async (req, res) => {
+    // Take the list of cells from the request obj
+    // serialize them
+    const { cells }: { cells: Cell[] } = req.body;
 
-        // send list of cells back to the browser
-    });
+    // Write the cells into the file
+    await fs.writeFile(fullPath, JSON.stringify(cells), 'utf-8');
 
-    router.post('/cells', async (req, res) => {
-        // Take the list of cells from the request object 
-        // serialize them
-        const { cells }: { cells: Cell[] } = req.body;
+    res.send({ status: 'ok' });
+  });
 
-        //Write the cells into the file
-        await fs.writeFile(fullPath, JSON.stringify(cells), 'utf-8');
-
-        res.send({ status: 'ok'});
-    });
-
-    return router;
+  return router;
 };
